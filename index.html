@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supply Chain Anomaly Predictor</title>
+    <style>
+        :root { --bg: #0a0a0c; --text: #e0e0e0; --accent: #00f2ff; --card: #16161a; --border: #333; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 800px; }
+        header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid var(--accent); padding-bottom: 10px; }
+        h1 { margin: 0; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); font-size: 1.5rem; }
+        .input-box { display: flex; gap: 10px; margin-bottom: 30px; }
+        input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: white; padding: 12px; border-radius: 4px; font-size: 1rem; }
+        button { background: var(--accent); color: black; border: none; padding: 12px 24px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        #output { display: none; }
+        .summary { background: var(--card); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent); margin-bottom: 20px; line-height: 1.6; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .anomaly-card { background: var(--card); border: 1px solid var(--border); padding: 15px; border-radius: 8px; font-size: 0.9rem; }
+        .severity { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; margin-bottom: 8px; }
+        .Critical { background: #ff4d4d; color: white; }
+        .High { background: #ff944d; color: black; }
+        .Medium { background: #ffdb4d; color: black; }
+        .Low { background: #4dff88; color: black; }
+        img { width: 100%; border-radius: 8px; border: 1px solid var(--border); margin-top: 20px; }
+        .loader { text-align: center; display: none; margin: 20px 0; color: var(--accent); font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Global Supply Chain Predictor</h1>
+        </header>
+
+        <div class="input-box">
+            <input type="text" id="target-input" placeholder="Enter sector (e.g. Pharma, Tech, Automotive)..." autocomplete="off">
+            <button id="predict-btn">Predict</button>
+        </div>
+
+        <div id="loader" class="loader">MONITORING LOGISTICS NETWORKS...</div>
+
+        <div id="output">
+            <div id="summary" class="summary"></div>
+            <div id="anomaly-grid" class="grid"></div>
+            <img id="visual-sim" alt="AI Visual Simulation">
+        </div>
+    </div>
+
+    <script>
+        const btn = document.getElementById('predict-btn');
+        const input = document.getElementById('target-input');
+        const output = document.getElementById('output');
+        const loader = document.getElementById('loader');
+
+        btn.addEventListener('click', async () => {
+            const target = input.value.trim();
+            if (!target) return alert("Please enter a target sector.");
+
+            // Reset
+            btn.disabled = true;
+            btn.textContent = "Analyzing...";
+            loader.style.display = 'block';
+            output.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || "Prediction failed.");
+                }
+
+                const data = await response.json();
+
+                // Build Summary
+                document.getElementById('summary').innerHTML = `<strong>Network Insight:</strong> ${data.summary}`;
+
+                // Build Grid
+                const grid = document.getElementById('anomaly-grid');
+                grid.innerHTML = (data.anomalies || []).map(a => `
+                    <div class="anomaly-card">
+                        <span class="severity ${a.severity}">${a.severity}</span>
+                        <div style="font-weight: bold; margin-bottom: 5px; color: var(--accent);">${a.type}</div>
+                        <div style="font-size: 0.8rem; margin-bottom: 8px;">${a.description}</div>
+                        <div style="font-size: 0.7rem; color: #888;">ETA Impact: ${a.date}</div>
+                    </div>
+                `).join('');
+
+                // Visual Simulation via Pollinations
+                const visualPrompt = encodeURIComponent(data.visual_prompt || `Futuristic warehouse logistics for ${target}, cyberpunk style, detailed`);
+                document.getElementById('visual-sim').src = `https://image.pollinations.ai/prompt/${visualPrompt}?width=800&height=400&model=flux`;
+
+                output.style.display = 'block';
+
+            } catch (err) {
+                alert("Error: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Predict";
+                loader.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
